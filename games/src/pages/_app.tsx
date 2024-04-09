@@ -1,8 +1,10 @@
 import Head from "next/head";
+import "../styles/globals.css";
+import { HeaderProvider } from "../../hoc/HeaderProvider";
 
 export default function App({ Component, pageProps }: any) {
   return (
-    <>
+    <HeaderProvider>
       <Head>
         <title>Mantine Template</title>
         <meta
@@ -11,6 +13,6 @@ export default function App({ Component, pageProps }: any) {
         />
       </Head>
       <Component {...pageProps} />
-    </>
+    </HeaderProvider>
   );
 }
