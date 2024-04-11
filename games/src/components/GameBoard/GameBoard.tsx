@@ -6,8 +6,8 @@ const GameBoard = ({ children }: { children: React.ReactElement }) => {
 
   return (
     <div className="w-full flex flex-col items-center justify-center">
-      <div className="uppercase">{mainInfo?.text}</div>
-      <div className="bg-neutral-focus min-h-24 p-8 grid gap-0.5 mb-8">
+      <div className="uppercase text-5xl">{mainInfo?.text}</div>
+      <div className="flex justify-center items-center bg-neutral-focus w-[54rem] h-[50rem] mb-8">
         {children}
       </div>
     </div>

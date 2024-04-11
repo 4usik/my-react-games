@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import GameBoard from "../GameBoard/GameBoard";
 
 type CoordType = {
@@ -14,10 +14,22 @@ const DIRECTION = {
   UP: { x: 0, y: -1 },
   DOWN: { x: 0, y: 1 },
 };
+const START_SNAKE = [
+  { x: 15, y: 15 },
+  { x: 15, y: 14 },
+  { x: 15, y: 13 },
+  { x: 15, y: 12 },
+  { x: 15, y: 11 },
+  { x: 15, y: 10 },
+  { x: 15, y: 9 },
+  { x: 15, y: 8 },
+];
 
-let foodItem = {
-  x: Math.floor(Math.random() * FIELD_SIZE),
-  y: Math.floor(Math.random() * FIELD_SIZE),
+const placeFoodItem = () => {
+  return {
+    x: Math.floor(Math.random() * FIELD_SIZE),
+    y: Math.floor(Math.random() * FIELD_SIZE),
+  };
 };
 
 const limitByField = (j: number) => {
@@ -26,33 +38,75 @@ const limitByField = (j: number) => {
   return j;
 };
 
-const newSnakePosition = (segments: CoordType[], direction: CoordType) => {
+const newSnakePosition = (
+  segments: CoordType[],
+  direction: CoordType,
+  foodItem: CoordType
+) => {
   const [head] = segments;
   const newHead = {
     x: limitByField(head.x + direction.x),
     y: limitByField(head.y + direction.y),
   };
 
+  if (collidesWithFood(newHead, foodItem)) {
+    return [newHead, ...segments];
+  }
+
   return [newHead, ...segments.slice(0, -1)];
 };
 
-const SnakeField = () => {
-  const [snakeSegments, setSnakeSegments] = useState<CoordType[]>([
-    { x: 8, y: 8 },
-    { x: 8, y: 7 },
-    { x: 8, y: 6 },
-  ]);
+const collidesWithFood = (head: CoordType, foodItem: CoordType) => {
+  return head.x === foodItem.x && head.y === foodItem.y;
+};
 
-  const [direction, setDirection] = useState(DIRECTION.LEFT);
+const SnakeField = () => {
+  const containerRef = useRef<HTMLInputElement>(null);
+  const [foodItem, setFoodItem] = useState({ x: 0, y: 0 });
+
+  const handleKeyPress = (event: any) => {
+    if (event.key === "ArrowRight") setDirection(DIRECTION.RIGHT);
+    if (event.key === "ArrowUp") setDirection(DIRECTION.UP);
+    if (event.key === "ArrowLeft") setDirection(DIRECTION.LEFT);
+    if (event.key === "ArrowDown") setDirection(DIRECTION.DOWN);
+    return;
+  };
+
+  const [snakeSegments, setSnakeSegments] = useState<CoordType[]>(START_SNAKE);
+
+  const [direction, setDirection] = useState(DIRECTION.RIGHT);
+  const [head, ...tail] = snakeSegments;
+
+  const intersectsWithItself = tail.some(
+    (segment) => segment.x === head.x && segment.y === head.y
+  );
+
+  useEffect(() => {
+    const inputElement = containerRef.current;
+    inputElement && inputElement.focus();
+  });
+
+  useEffect(() => {
+    setFoodItem(placeFoodItem());
+  }, []);
+
+  useEffect(() => {
+    setFoodItem(placeFoodItem());
+  }, [snakeSegments.length]);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setSnakeSegments((segments) => newSnakePosition(segments, direction));
-    }, 500);
+      setSnakeSegments((segments) =>
+        newSnakePosition(segments, direction, foodItem)
+      );
+    }, 200);
+
+    if (intersectsWithItself) {
+      clearInterval(interval);
+    }
 
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [direction, foodItem, intersectsWithItself]);
 
   const getItem = (x: number, y: number, snakeSegments: CoordType[]) => {
     if (foodItem.x === x && foodItem.y === y)
@@ -67,17 +121,28 @@ const SnakeField = () => {
 
   return (
     <GameBoard>
-      <>
-        {FIELD_ROW.map((y) => (
-          <div key={y} className="flex bg-neutral-focus gap-0.5">
-            {FIELD_ROW.map((x) => (
-              <div key={x} className="p-1">
-                {getItem(x, y, snakeSegments)}
-              </div>
-            ))}
-          </div>
-        ))}
-      </>
+      {intersectsWithItself ? (
+        <div className="flex flex-col items-center uppercase">
+          <h1 className="text-5xl my-10">Game over</h1>
+        </div>
+      ) : (
+        <div
+          ref={containerRef}
+          className="focus:outline-none"
+          tabIndex={-1}
+          onKeyDown={handleKeyPress}
+        >
+          {FIELD_ROW.map((y) => (
+            <div key={y} className="flex bg-neutral-focus gap-0.5">
+              {FIELD_ROW.map((x) => (
+                <div key={x} className="p-1">
+                  {getItem(x, y, snakeSegments)}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
     </GameBoard>
   );
 };
